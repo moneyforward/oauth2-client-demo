@@ -1,29 +1,29 @@
-// Importing necessary modules from express and @badgateway/oauth2-client
+// 必要なモジュールをexpressと@badgateway/oauth2-clientからインポート
 import express from 'express';
 import { generateCodeVerifier, OAuth2Client } from '@badgateway/oauth2-client';
 import crypto from 'crypto';
-// Initialize the express app
+// Expressアプリケーションを初期化
 const app = express();
-const PORT = 12345; // Define port for the server to listen on
-// OAuth2 configuration constants
-const CLIENT_ID = 'YOUR CLIENT_ID'; // Client ID for OAuth2 client
-const CLIENT_SECRET = 'YOUR CLIENT_SECRET'; // Client secret for OAuth2 client
-const REDIRECT_URI = 'http://localhost:12345/callback'; // Redirect URI to handle callback from authorization server
-const SERVER = 'https://api.biz.moneyforward.com'; // OAuth2 authorization server base URL
-// Global variables to manage token and state information
-let tokenResponse = null; // Stores the token response
-let codeVerifier = null; // Code verifier for PKCE (Proof Key for Code Exchange)
-let state = null; // Unique state for each authorization request to prevent CSRF attacks
-// Instantiate OAuth2 client with configuration
+const PORT = 12345; // サーバーがリッスンするポートを定義
+// OAuth2設定の定数
+const CLIENT_ID = 'YOUR CLIENT_ID'; // OAuth2クライアントのクライアントID
+const CLIENT_SECRET = 'YOUR CLIENT_SECRET'; // OAuth2クライアントのクライアントシークレット
+const REDIRECT_URI = 'http://localhost:12345/callback'; // 認可サーバーからのコールバックを処理するリダイレクトURI
+const SERVER = 'https://api.biz.moneyforward.com'; // OAuth2認可サーバーの基本URL
+// トークンと状態情報を管理するグローバル変数
+let tokenResponse = null; // トークンレスポンスを保存
+let codeVerifier = null; // PKCEのコードバリファイア
+let state = null; // CSRF攻撃を防ぐためのユニークな状態値
+// OAuth2クライアントを設定でインスタンス化
 const client = new OAuth2Client({
   server: SERVER,
   clientId: CLIENT_ID,
   clientSecret: CLIENT_SECRET,
   authorizationEndpoint: '/authorize',
   tokenEndpoint: '/token',
-  authenticationMethod: 'client_secret_post', // Method to authenticate client
+  authenticationMethod: 'client_secret_post', // クライアント認証の方法
 });
-// Helper function to create HTML form buttons for actions on the homepage
+// ホームページにボタンを生成するヘルパー関数
 function createButton(action, label) {
   return `
     <form action="${action}" method="get" style="display:inline;">
@@ -31,41 +31,41 @@ function createButton(action, label) {
     </form>
   `;
 }
-// Display home page with token info and buttons for actions
+// ホームページにトークン情報と操作ボタンを表示
 function displayHomePage(req, res) {
   const tokenInfo = tokenResponse
-    ? JSON.stringify(tokenResponse, null, 2) // If token is available, display its details
-    : 'No token available'; // If token is not available, show a placeholder message
+    ? JSON.stringify(tokenResponse, null, 2) // トークンが存在する場合はその詳細を表示
+    : 'No token available'; // トークンがない場合はプレースホルダーメッセージを表示
   res.send(`
     <h1>OAuth2 Client Demo</h1>
     <h2>Token Info</h2>
     <pre>${tokenInfo}</pre>
-    ${createButton('/login', 'Authorize')}
+    ${createButton('/start_authorization', 'Authorize')}
     ${createButton('/refresh', 'Refresh Token')}
     ${createButton('/revoke', 'Revoke Token')}
     <br /><br />
     ${createButton('/office', 'Fetch Protected Resource')}
-  `); // Send response with HTML buttons for various actions
+  `); // HTMLで各操作のボタンを含むレスポンスを送信
 }
-// Start authorization flow for OAuth2 using PKCE (Proof Key for Code Exchange)
+// PKCEを使用してOAuth2の認可フローを開始
 async function startAuthorization(req, res) {
-  codeVerifier = await generateCodeVerifier(); // Generate code verifier for PKCE
-  state = Math.random().toString(36).substring(7); // Generate a random state string for CSRF protection
-  // Generate authorization URL
+  codeVerifier = await generateCodeVerifier(); // PKCE用のコードバリファイアを生成
+  state = Math.random().toString(36).substring(7); // CSRF防止のためにランダムな状態値を生成
+  // 認可URLを生成
   const authorizeUrl = await client.authorizationCode.getAuthorizeUri({
     redirectUri: REDIRECT_URI,
     codeVerifier,
     state,
-    scope: ['mfc/admin/office.read'], // Scope of access for the authorization
+    scope: ['mfc/admin/office.read'], // 認可のアクセス範囲
   });
-  console.info('Redirecting to', authorizeUrl); // Log the URL for debugging
-  res.redirect(authorizeUrl); // Redirect user to the authorization URL
+  console.info('Redirecting to', authorizeUrl); // デバッグ用にURLをログ出力
+  res.redirect(authorizeUrl); // 認可URLにユーザーをリダイレクト
 }
-// Handle the callback from authorization server to retrieve tokens
+// 認可サーバーからのコールバックを処理しトークンを取得
 async function handleAuthorizationCallback(req, res) {
   try {
-    const { code, state: returnedState } = req.query; // Extract code and state from query parameters
-    // Verify that returned state matches the initial state for security
+    const { code, state: returnedState } = req.query; // クエリパラメータからコードと状態を抽出
+    // 返された状態が初期の状態と一致することを確認してセキュリティを保護
     if (
       !crypto.timingSafeEqual(
         Buffer.from(String(returnedState)),
@@ -73,132 +73,132 @@ async function handleAuthorizationCallback(req, res) {
       )
     )
       throw new Error('State does not match');
-    if (!codeVerifier) throw new Error('Code verifier is missing'); // Ensure code verifier exists for PKCE
-    // Create request payload for token exchange
+    if (!codeVerifier) throw new Error('Code verifier is missing'); // PKCE用のコードバリファイアが存在するか確認
+    // トークン交換用のリクエストペイロードを作成
     const authorizationCodeRequest = {
-      grant_type: 'authorization_code', // Authorization code grant type
+      grant_type: 'authorization_code', // 認可コードのグラントタイプ
       code: code,
       redirect_uri: REDIRECT_URI,
-      code_verifier: codeVerifier, // Send code verifier for PKCE
+      code_verifier: codeVerifier, // PKCE用のコードバリファイアを送信
     };
-    // Exchange authorization code for access and refresh tokens
+    // 認可コードを使用してアクセストークンとリフレッシュトークンを交換
     tokenResponse = await client.request(
       'tokenEndpoint',
       authorizationCodeRequest,
     );
-    console.info('Access Token Response:', tokenResponse); // Log the token response
-    res.redirect('/'); // Redirect back to the home page
+    console.info('Access Token Response:', tokenResponse); // トークンレスポンスをログ出力
+    res.redirect('/'); // ホームページにリダイレクト
   } catch (error) {
-    console.error('Error during callback processing:', error); // Log errors if any
+    console.error('Error during callback processing:', error); // エラーがあればログ出力
     res.status(500).send('Failed to obtain access token.');
   }
 }
-// Refresh the access token using the refresh token
+// リフレッシュトークンを使用してアクセストークンを更新
 async function refreshAccessToken(req, res) {
-  // Check if refresh token is available
+  // リフレッシュトークンが存在するか確認
   if (!tokenResponse?.refresh_token) {
-    console.error('Refresh token is missing.'); // Log missing refresh token
-    return false; // Return false if no refresh token
+    console.error('Refresh token is missing.'); // リフレッシュトークンがない場合エラーをログ出力
+    return false; // リフレッシュトークンがない場合falseを返す
   }
   try {
-    // Create refresh token request payload
+    // リフレッシュトークンのリクエストペイロードを作成
     const refreshRequest = {
-      grant_type: 'refresh_token', // Refresh token grant type
+      grant_type: 'refresh_token', // リフレッシュトークンのグラントタイプ
       refresh_token: tokenResponse.refresh_token,
     };
-    console.info('Refreshing token with request:', refreshRequest); // Log request payload
-    // Request new access token using refresh token
+    console.info('Refreshing token with request:', refreshRequest); // リクエストペイロードをログ出力
+    // リフレッシュトークンを使用して新しいアクセストークンをリクエスト
     tokenResponse = await client.request('tokenEndpoint', refreshRequest);
-    console.info('New Refreshed Token Response:', tokenResponse); // Log the refreshed token
-    return true; // Return true if refresh successful
+    console.info('New Refreshed Token Response:', tokenResponse); // 更新されたトークンをログ出力
+    return true; // リフレッシュ成功の場合trueを返す
   } catch (error) {
-    console.error('Error refreshing token:', error); // Log errors if any
-    return false; // Return false if refresh fails
+    console.error('Error refreshing token:', error); // エラーがあればログ出力
+    return false; // リフレッシュ失敗の場合falseを返す
   }
 }
-// Wrapper for /refresh route to handle Promise<boolean>
+// /refreshルートのラッパー、Promise<boolean>を処理
 app.get('/refresh', async (req, res) => {
   const refreshStatus = await refreshAccessToken(req, res);
   if (refreshStatus) {
-    res.redirect('/'); // Redirect to home page if refresh is successful
+    res.redirect('/'); // リフレッシュ成功の場合ホームページにリダイレクト
   } else {
     res.status(401).send('Failed to refresh token. Please log in again.');
   }
 });
-// Revoke the current access token for security (optional)
+// セキュリティ強化のために現在のアクセストークンを取り消す（オプション）
 async function revokeAccessToken(req, res) {
   if (!tokenResponse || !tokenResponse.access_token) {
-    res.status(400).send('Access token is missing'); // Ensure access token is available
+    res.status(400).send('Access token is missing'); // アクセストークンが存在するか確認
     return;
   }
   try {
-    // Revoke token by sending a request to the revocation endpoint
+    // トークンを取り消すためにリクエストを送信
     await client.request('revocationEndpoint', {
       token: tokenResponse.access_token,
     });
-    tokenResponse = null; // Clear token response after revocation
-    console.info('Token revoked successfully'); // Log success message
-    res.redirect('/'); // Redirect to home page
+    tokenResponse = null; // 取り消し後にトークンレスポンスをクリア
+    console.info('Token revoked successfully'); // 成功メッセージをログ出力
+    res.redirect('/'); // ホームページにリダイレクト
   } catch (error) {
-    console.error('Error revoking token:', error); // Log errors if any
+    console.error('Error revoking token:', error); // エラーがあればログ出力
     res.status(500).send('Failed to revoke token.');
   }
 }
-// Fetch a protected resource using the access token
+// アクセストークンを使用して保護されたリソースを取得
 async function fetchProtectedResource(req, res) {
   if (!tokenResponse) {
-    res.status(401).send('Access token is missing. Please log in.'); // Ensure access token is available
+    res.status(401).send('Access token is missing. Please log in.'); // アクセストークンが存在するか確認
     return;
   }
   try {
-    // First attempt to fetch resource
+    // リソースの初回取得を試行
     let response = await fetch(
       'https://bizapis.moneyforward.com/admin/office',
       {
         method: 'GET',
         headers: {
-          Authorization: `Bearer ${tokenResponse.access_token}`, // Send access token
+          Authorization: `Bearer ${tokenResponse.access_token}`, // アクセストークンを送信
         },
       },
     );
-    // If token expired, attempt to refresh and retry fetching the resource
+    // トークンが期限切れの場合、リフレッシュしてリソース取得を再試行
     if (response.status === 401) {
       console.info('Token expired. Refreshing token...');
       const refreshStatus = await refreshAccessToken(req, res);
       if (!refreshStatus) {
-        // Ensure refresh was successful
+        // リフレッシュが成功したことを確認
         res
           .status(401)
           .send('Token expired and refresh failed. Please log in again.');
         return;
       }
-      // Retry fetching resource with refreshed token
+      // リフレッシュしたトークンでリソース取得を再試行
       response = await fetch('https://bizapis.moneyforward.com/admin/office', {
         method: 'GET',
         headers: {
-          Authorization: `Bearer ${tokenResponse.access_token}`, // Send refreshed access token
+          Authorization: `Bearer ${tokenResponse.access_token}`, // リフレッシュしたアクセストークンを送信
         },
       });
     }
-    // Handle final fetch response
+    // 最終的なリソース取得の応答を処理
     if (!response.ok) {
-      throw new Error(`Failed to fetch resource: ${response.statusText}`); // Handle response error
+      throw new Error(`Failed to fetch resource: ${response.statusText}`); // 応答エラーを処理
     }
-    const data = await response.json(); // Parse response JSON
-    console.info('Protected Resource Response:', data); // Log the response data
-    res.json(data); // Send data to client
+    const data = await response.json(); // 応答JSONを解析
+    console.info('Protected Resource Response:', data); // 応答データをログ出力
+    res.json(data); // クライアントにデータを送信
   } catch (error) {
-    console.error('Error fetching protected resource:', error); // Log errors if any
+    console.error('Error fetching protected resource:', error); // エラーがあればログ出力
     res.status(500).send('Failed to fetch protected resource.');
   }
 }
-// Define routes for the application
-app.get('/', displayHomePage); // Home route
-app.get('/login', startAuthorization); // Start authorization
-app.get('/callback', handleAuthorizationCallback); // Handle callback and get tokens
-app.get('/revoke', revokeAccessToken); // Revoke token
-app.get('/office', fetchProtectedResource); // Access protected resource
-// Start the server
+// アプリケーションのルートを定義
+app.get('/', displayHomePage); // ホームルート
+app.get('/start_authorization', startAuthorization); // 認可を開始
+app.get('/callback', handleAuthorizationCallback); // コールバックを処理してトークンを取得
+app.get('/revoke', revokeAccessToken); // トークンを取り消す
+app.get('/office', fetchProtectedResource); // 保護されたリソースにアクセス
+// サーバーを開始
 app.listen(PORT, () => {
-  console.log(`Server is running at http://localhost:${PORT}`); // Log server start message
+  console.log(`Server is running at http://localhost:${PORT}`); // サーバー開始メッセージをログ出力
 });
