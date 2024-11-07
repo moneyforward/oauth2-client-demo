@@ -1,71 +1,73 @@
 # oauth-client-demo
 
-This project demonstrates how to implement an OAuth2 client in Node.js to interact with MoneyForward's authentication server. It showcases a complete flow for authorizing, obtaining tokens, refreshing tokens, and accessing protected resources using OAuth2.
+**For the English README, please refer to [こちら](./README-en.md).**
 
-## Prerequisites
+このプロジェクトは、Node.jsを使用してMoneyForwardの認可サーバーとやり取りするOAuth2クライアントの実装方法を示しています。OAuth2を用いた認可、トークンの取得、トークンのリフレッシュ、保護されたリソースへのアクセスまでの一連のフローを紹介します。
 
-- **Node.js**: Ensure that Node.js is installed on your system, as this example is based on Node.js v22.9.0. You can download it from [Node.js](https://nodejs.org/).
-- **OAuth2 Client Library**: Uses `@badgateway/oauth2-client` for simplified OAuth2 flow.
+## 前提条件
 
-## Configuration
+- **Node.js**: この例はNode.js v22.9.0を基にしていますので、お使いのシステムにNode.jsがインストールされていることを確認してください。[Node.js](https://nodejs.org/)からダウンロードできます。
+- **OAuth2 クライアントライブラリ**: OAuth2フローを簡素化するために、`@badgateway/oauth2-client`ライブラリを使用します。
 
-Before running the application, you need to set your own OAuth2 credentials. Replace the placeholders in `src/index.ts` with your actual values:
+## 設定
+
+アプリケーションを実行する前に、OAuth2のクレデンシャルを設定する必要があります。`src/index.ts`のプレースホルダーを実際の値に置き換えてください。
 
 ```javascript
-const CLIENT_ID = 'YOUR_CLIENT_ID'; // Replace with your OAuth2 Client ID
-const CLIENT_SECRET = 'YOUR_CLIENT_SECRET'; // Replace with your OAuth2 Client Secret
-const REDIRECT_URI = 'http://localhost:12345/callback'; // Replace with your Redirect URI
+const CLIENT_ID = 'YOUR_CLIENT_ID'; // OAuth2のクライアントIDに置き換えてください
+const CLIENT_SECRET = 'YOUR_CLIENT_SECRET'; // OAuth2のクライアントシークレットに置き換えてください
+const REDIRECT_URI = 'http://localhost:12345/callback'; // リダイレクトURIに置き換えてください
 ```
 
-Make sure to set `CLIENT_ID`, `CLIENT_SECRET`, and `REDIRECT_URI` according to your settings.
+`CLIENT_ID`、`CLIENT_SECRET`、および`REDIRECT_URI`を設定に合わせて適切に設定してください。
 
-## Dependencies
+## 依存パッケージ
 
-The project requires the following dependencies:
+このプロジェクトでは以下の依存パッケージが必要です。
 
-- `@badgateway/oauth2-client`: OAuth2 client library.
-- `express`: Web framework for handling routes and HTTP requests.
+- `@badgateway/oauth2-client`: OAuth2クライアントライブラリ
+- `express`: ルートやHTTPリクエストを処理するWebフレームワーク
 
-These dependencies are specified in the `package.json` file, and can be installed as shown below.
+これらの依存パッケージは`package.json`に指定されており、以下のコマンドでインストールできます。
 
-## Installation
+## インストール
 
-To install the required dependencies:
+必要な依存パッケージをインストールするには、以下を実行してください。
 
 ```bash
 npm install
 ```
 
-## Build
+## ビルド
 
-To compile the TypeScript files into JavaScript:
+TypeScriptファイルをJavaScriptにコンパイルするには、以下のコマンドを実行します。
 
 ```bash
 npm run build
 ```
 
-## Run
+## 実行
 
-To start the application after building, use:
+ビルド後、アプリケーションを開始するには以下を実行します。
 
 ```bash
 npm start
 ```
 
-Alternatively, you can use the `dev` script to build and start in one step:
+または、`dev`スクリプトを使用してビルドと開始を一度に行うこともできます。
 
 ```bash
 npm run dev
 ```
 
-## Project Structure
+## プロジェクト構成
 
-- **src/index.ts**: Main file where the OAuth2 client is set up and routes are defined.
-- **package.json**: Defines project dependencies, scripts, and other configurations.
+- **src/index.ts**: OAuth2クライアントの設定およびルートが定義されているメインファイル
+- **package.json**: 依存パッケージ、スクリプト、およびその他の設定が定義されています
 
-## Formatting
+## フォーマット
 
-To format all project files, use the following command:
+すべてのプロジェクトファイルをフォーマットするには、次のコマンドを使用します。
 
 ```bash
 npm run format
