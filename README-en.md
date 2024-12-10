@@ -1,15 +1,15 @@
 # oauth-client-demo
 
-This project demonstrates how to implement an OAuth2 client in Node.js to interact with MoneyForward's authentication server. It showcases a complete flow for authorizing, obtaining tokens, refreshing tokens, and accessing protected resources using OAuth2.
+This project demonstrates how to implement an OAuth2 client in Node.js to interact with Money Forward's authentication server. It showcases a complete flow for authorizing, obtaining tokens, refreshing tokens, and accessing protected resources using OAuth2.
 
 ## Prerequisites
 
 - **Node.js**: Ensure that Node.js is installed on your system, as this example is based on Node.js v22.9.0. You can download it from [Node.js](https://nodejs.org/).
-- **OAuth2 Client Library**: Uses `@badgateway/oauth2-client` for simplified OAuth2 flow.
+- **OAuth2 Client Library**: Uses `@badgateway/oauth2-client` to implement OAuth2 flow properly.
 
 ## Configuration
 
-Before running the application, you need to set your own OAuth2 credentials. Replace the placeholders in `src/index.ts` with your actual values:
+Before running the application, you need to set your own OAuth2 credentials and redirect uri. Replace the placeholders in `src/index.ts` with your actual values:
 
 ```javascript
 const CLIENT_ID = 'YOUR_CLIENT_ID'; // Replace with your OAuth2 Client ID
@@ -21,7 +21,7 @@ Make sure to set `CLIENT_ID`, `CLIENT_SECRET`, and `REDIRECT_URI` according to y
 
 ## Dependencies
 
-The project requires the following dependencies:
+The project uses the following dependencies:
 
 - `@badgateway/oauth2-client`: OAuth2 client library.
 - `express`: Web framework for handling routes and HTTP requests.
@@ -38,7 +38,7 @@ npm install
 
 ## Build
 
-To compile the TypeScript files into JavaScript:
+To build the TypeScript files into JavaScript:
 
 ```bash
 npm run build
@@ -50,12 +50,6 @@ To start the application after building, use:
 
 ```bash
 npm start
-```
-
-Alternatively, you can use the `dev` script to build and start in one step:
-
-```bash
-npm run dev
 ```
 
 ## Project Structure
