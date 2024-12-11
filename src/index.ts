@@ -62,7 +62,7 @@ function displayHomePage(req: express.Request, res: express.Response) {
 // PKCEを使用してOAuth2の認可フローを開始
 async function startAuthorization(req: express.Request, res: express.Response) {
   codeVerifier = await generateCodeVerifier(); // PKCE用のコードバリファイアを生成
-  state = Math.random().toString(36).substring(7); // CSRF防止のためにランダムな状態値を生成 -> why 7 characters in security context? This sample is a demo, but should be strict in security and important point.
+  state = crypto.randomBytes(16).toString('hex'); // CSRF防止のためにランダムな状態値を生成
 
   // 認可URLを生成
   const authorizeUrl = await client.authorizationCode.getAuthorizeUri({

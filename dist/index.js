@@ -9,19 +9,20 @@ const PORT = 12345; // サーバーがリッスンするポートを定義
 const CLIENT_ID = 'YOUR CLIENT_ID'; // OAuth2クライアントのクライアントID
 const CLIENT_SECRET = 'YOUR CLIENT_SECRET'; // OAuth2クライアントのクライアントシークレット
 const REDIRECT_URI = 'http://localhost:12345/callback'; // 認可サーバーからのコールバックを処理するリダイレクトURI
-const SERVER = 'https://api.biz.moneyforward.com'; // OAuth2認可サーバーの基本URL
+const AUTHORIZATION_SERVER = 'https://api.biz.moneyforward.com'; // OAuth2認可サーバーの基本URL
 // トークンと状態情報を管理するグローバル変数
 let tokenResponse = null; // トークンレスポンスを保存
 let codeVerifier = null; // PKCEのコードバリファイア
 let state = null; // CSRF攻撃を防ぐためのユニークな状態値
 // OAuth2クライアントを設定でインスタンス化
 const client = new OAuth2Client({
-  server: SERVER,
+  server: AUTHORIZATION_SERVER,
   clientId: CLIENT_ID,
   clientSecret: CLIENT_SECRET,
   authorizationEndpoint: '/authorize',
   tokenEndpoint: '/token',
   authenticationMethod: 'client_secret_post', // クライアント認証の方法
+  // authenticationMethod: 'client_secret_basic', // クライアント認証の方法 CLIENT_SECRET_BASIC を選択した場合
 });
 // ホームページにボタンを生成するヘルパー関数
 function createButton(action, label) {
@@ -35,22 +36,21 @@ function createButton(action, label) {
 function displayHomePage(req, res) {
   const tokenInfo = tokenResponse
     ? JSON.stringify(tokenResponse, null, 2) // トークンが存在する場合はその詳細を表示
-    : 'No token available'; // トークンがない場合はプレースホルダーメッセージを表示
+    : '保持しているトークンはありません / No token available'; // トークンがない場合はプレースホルダーメッセージを表示
   res.send(`
     <h1>OAuth2 Client Demo</h1>
-    <h2>Token Info</h2>
+    <h2>トークン情報 / Token Info</h2>
     <pre>${tokenInfo}</pre>
-    ${createButton('/start_authorization', 'Authorize')}
-    ${createButton('/refresh', 'Refresh Token')}
-    ${createButton('/revoke', 'Revoke Token')}
+    ${createButton('/start_authorization', '認可開始 / Start Authorize')}
+    ${createButton('/revoke', 'トークンを取り消し / Revoke Tokens')}
     <br /><br />
-    ${createButton('/office', 'Fetch Protected Resource')}
+    ${createButton('/office', 'APIを呼び出し、保護されたリソースを取得 / Call API to fetch protected resource')}
   `); // HTMLで各操作のボタンを含むレスポンスを送信
 }
 // PKCEを使用してOAuth2の認可フローを開始
 async function startAuthorization(req, res) {
   codeVerifier = await generateCodeVerifier(); // PKCE用のコードバリファイアを生成
-  state = Math.random().toString(36).substring(7); // CSRF防止のためにランダムな状態値を生成
+  state = crypto.randomBytes(16).toString('hex'); // CSRF防止のためにランダムな状態値を生成
   // 認可URLを生成
   const authorizeUrl = await client.authorizationCode.getAuthorizeUri({
     redirectUri: REDIRECT_URI,
@@ -90,7 +90,11 @@ async function handleAuthorizationCallback(req, res) {
     res.redirect('/'); // ホームページにリダイレクト
   } catch (error) {
     console.error('Error during callback processing:', error); // エラーがあればログ出力
-    res.status(500).send('Failed to obtain access token.');
+    res
+      .status(500)
+      .send(
+        'アクセストークン取得に失敗しました / Failed to obtain access token.',
+      );
   }
 }
 // リフレッシュトークンを使用してアクセストークンを更新
@@ -116,19 +120,12 @@ async function refreshAccessToken(req, res) {
     return false; // リフレッシュ失敗の場合falseを返す
   }
 }
-// /refreshルートのラッパー、Promise<boolean>を処理
-app.get('/refresh', async (req, res) => {
-  const refreshStatus = await refreshAccessToken(req, res);
-  if (refreshStatus) {
-    res.redirect('/'); // リフレッシュ成功の場合ホームページにリダイレクト
-  } else {
-    res.status(401).send('Failed to refresh token. Please log in again.');
-  }
-});
-// セキュリティ強化のために現在のアクセストークンを取り消す（オプション）
+// API連携を終了する場合に安全のために現在のアクセストークンおよびリフレッシュトークンを取り消す（オプション）
 async function revokeAccessToken(req, res) {
   if (!tokenResponse || !tokenResponse.access_token) {
-    res.status(400).send('Access token is missing'); // アクセストークンが存在するか確認
+    res
+      .status(400)
+      .send('アクセストークンがありません / Access token is missing'); // アクセストークンが存在するか確認
     return;
   }
   try {
@@ -141,13 +138,19 @@ async function revokeAccessToken(req, res) {
     res.redirect('/'); // ホームページにリダイレクト
   } catch (error) {
     console.error('Error revoking token:', error); // エラーがあればログ出力
-    res.status(500).send('Failed to revoke token.');
+    res
+      .status(500)
+      .send('トークンの取り消しに失敗しました / Failed to revoke token.');
   }
 }
-// アクセストークンを使用して保護されたリソースを取得
+// アクセストークンを使用してAPIを実行し、保護されたリソースを取得
 async function fetchProtectedResource(req, res) {
   if (!tokenResponse) {
-    res.status(401).send('Access token is missing. Please log in.'); // アクセストークンが存在するか確認
+    res
+      .status(401)
+      .send(
+        'アクセストークンがありません。再度認可からやり直してください。 / Access token is missing. Please start authorize again.',
+      ); // アクセストークンが存在するか確認
     return;
   }
   try {
@@ -169,7 +172,9 @@ async function fetchProtectedResource(req, res) {
         // リフレッシュが成功したことを確認
         res
           .status(401)
-          .send('Token expired and refresh failed. Please log in again.');
+          .send(
+            'アクセストークンが期限切れですが、リフレッシュに失敗しました。再度認可からやり直してください。 / Token expired and refresh failed. Please start authorize again.',
+          );
         return;
       }
       // リフレッシュしたトークンでリソース取得を再試行
@@ -189,7 +194,11 @@ async function fetchProtectedResource(req, res) {
     res.json(data); // クライアントにデータを送信
   } catch (error) {
     console.error('Error fetching protected resource:', error); // エラーがあればログ出力
-    res.status(500).send('Failed to fetch protected resource.');
+    res
+      .status(500)
+      .send(
+        '保護されたリソースの取得に失敗しました。 / Failed to fetch protected resource.',
+      );
   }
 }
 // アプリケーションのルートを定義
