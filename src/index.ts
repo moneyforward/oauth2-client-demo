@@ -62,7 +62,7 @@ function displayHomePage(req: express.Request, res: express.Response) {
 // PKCEを使用してOAuth2の認可フローを開始
 async function startAuthorization(req: express.Request, res: express.Response) {
   codeVerifier = await generateCodeVerifier(); // PKCE用のコードバリファイアを生成
-  state = crypto.randomBytes(16).toString('hex'); // CSRF防止のためにランダムな状態値を生成
+  state = crypto.randomBytes(16).toString('hex'); // CSRF防止のためにランダムな状態値を生成、state値についてはセキュリティ要件に応じて必要な強度のものを生成するようにしてください。
 
   // 認可URLを生成
   const authorizeUrl = await client.authorizationCode.getAuthorizeUri({
