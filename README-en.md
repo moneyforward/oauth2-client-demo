@@ -9,7 +9,7 @@ This project demonstrates how to implement an OAuth2 client in Node.js to intera
 
 ## Configuration
 
-Before running the application, you need to set your own OAuth2 credentials and redirect uri. Replace the placeholders in `src/index.ts` with your actual values:
+Before running the application, you need to set your own OAuth2 credentials and redirect URI. Replace the placeholders in `src/index.ts` with your actual values:
 
 ```javascript
 const CLIENT_ID = 'YOUR_CLIENT_ID'; // Replace with your OAuth2 Client ID
