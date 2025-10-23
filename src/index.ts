@@ -55,7 +55,7 @@ function displayHomePage(req: express.Request, res: express.Response) {
     ${createButton('/start_authorization', '認可開始 / Start Authorize')}
     ${createButton('/revoke', 'トークンを取り消し / Revoke Tokens')}
     <br /><br />
-    ${createButton('/office', 'APIを呼び出し、保護されたリソースを取得 / Call API to fetch protected resource')}
+    ${createButton('/v2/tenant', 'APIを呼び出し、保護されたリソースを取得 / Call API to fetch protected resource')}
   `); // HTMLで各操作のボタンを含むレスポンスを送信
 }
 
@@ -69,7 +69,7 @@ async function startAuthorization(req: express.Request, res: express.Response) {
     redirectUri: REDIRECT_URI,
     codeVerifier,
     state,
-    scope: ['mfc/admin/office.read'], // 認可のアクセス範囲
+    scope: ['mfc/admin/tenant.read'], // 認可のアクセス範囲
   });
 
   console.info('Redirecting to', authorizeUrl); // デバッグ用にURLをログ出力
@@ -193,7 +193,7 @@ async function fetchProtectedResource(
   try {
     // リソースの初回取得を試行
     let response = await fetch(
-      'https://bizapis.moneyforward.com/admin/office',
+      'https://bizapis.moneyforward.com/admin/v2/tenant',
       {
         method: 'GET',
         headers: {
@@ -218,7 +218,7 @@ async function fetchProtectedResource(
       }
 
       // リフレッシュしたトークンでリソース取得を再試行
-      response = await fetch('https://bizapis.moneyforward.com/admin/office', {
+      response = await fetch('https://bizapis.moneyforward.com/admin/v2/tenant', {
         method: 'GET',
         headers: {
           Authorization: `Bearer ${tokenResponse.access_token}`, // リフレッシュしたアクセストークンを送信
@@ -249,7 +249,7 @@ app.get('/', displayHomePage); // ホームルート
 app.get('/start_authorization', startAuthorization); // 認可を開始
 app.get('/callback', handleAuthorizationCallback); // コールバックを処理してトークンを取得
 app.get('/revoke', revokeAccessToken); // トークンを取り消す
-app.get('/office', fetchProtectedResource); // 保護されたリソースにアクセス
+app.get('/v2/tenant', fetchProtectedResource); // 保護されたリソースにアクセス
 
 // サーバーを開始
 app.listen(PORT, () => {
